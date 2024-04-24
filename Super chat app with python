@@ -1,0 +1,55 @@
+import tkinter as tk
+import tkinter.simpledialog as simpledialog
+import tkinter.filedialog as filedialog
+import tkinter.messagebox as messagebox
+import socket
+import threading
+
+class ChatApp:
+    def __init__(self, host='', port=5000):
+        self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+        self.create_ui()
+
+    def create_ui(self):
+        self.window = tk.Tk()
+        self.window.title('Chat App')
+        self.window.geometry('400x300')
+
+        self.text_area = tk.Text(self.window, state='disabled')
+        self.text_area.pack(side='top', fill='both', expand=True)
+
+        self.entry = tk.Entry(self.window)
+        self.entry.pack(side='bottom', fill='x')
+
+        self.window.bind('<Return>', self.send_message)
+
+        self.receive_thread = threading.Thread(target=self.receive)
+        self.receive_thread.start()
+
+    def receive(self):
+        while True:
+            try:
+                message = self.sock.recv(1024).decode('utf-8')
+                self.text_area.config(state='normal')
+                self.text_area.insert('end', message + '\n')
+                self.text_area.yview('end')
+                self.text_area.config(state='disabled')
+            except:
+                pass
+
+    def send_message(self, event):
+        message = self.entry.get()
+        self.sock.send(message.encode('utf-8'))
+        self.entry.delete(0, 'end')
+
+    def run(self):
+        self.window.mainloop()
+
+if __name__ == '__main__':
+    host = simpledialog.askstring('Host', 'Enter host:')
+    port = int(simpledialog.askinteger('Port', 'Enter port:'))
+    app = ChatApp(host, port)
+    app.run()
